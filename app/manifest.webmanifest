@@ -1,0 +1,14 @@
+{
+  "name": "Cafetal · asistente de campo sin señal",
+  "short_name": "Cafetal",
+  "description": "Un modelo de lenguaje pequeño corre en el equipo y convierte notas de visitas a cafetales en registros técnicos, sin internet.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f2ed",
+  "theme_color": "#1e6b4e",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
