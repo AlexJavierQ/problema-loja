@@ -1,0 +1,36 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hallazgos · Objetos perdidos y encontrados</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f4ee;color:#192e2a;font:16px system-ui,sans-serif}header,main{width:min(980px,94%);margin:auto}header{padding:24px 0;border-bottom:1px solid #c5ccc3;font-weight:750;color:#225748}h1{font:clamp(36px,6vw,64px)/1.05 Georgia,serif;margin:30px 0 10px}h2{font:28px Georgia,serif;margin-top:0}main>p{max-width:68ch}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:24px 0}section,article{background:white;border:1px solid #d6ddd4;border-radius:15px;padding:22px}article{margin:12px 0;background:#f6f8f3}label{display:block;font-weight:600;margin:14px 0 4px}input,select,textarea,button{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid #a8b4ab;width:100%}textarea{min-height:74px}button{width:auto;background:#215947;color:white;cursor:pointer;border:0;margin:8px 4px 0 0}button:disabled{opacity:.6}.minor{background:#e9eee8;color:#234438}img{max-width:100%;max-height:190px;border-radius:7px}small{color:#456454}.notice{color:#784509}p{overflow-wrap:anywhere}#state{min-height:1.5em} @media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style><header>Hallazgos</header><main><h1>¿Perdiste algo?<br>¿Encontraste algo?</h1><p>Describe el objeto o sube una foto. Revisa posibles coincidencias y conversa con la otra persona para reconocerlo.</p>
+<div class="grid"><section><h2>Crear reporte</h2><form id="form"><label for="tipo">¿Qué ocurrió?</label><select id="tipo"><option value="perdido">Perdí un objeto</option><option value="encontrado">Encontré un objeto</option></select>
+<label for="descripcion">Descripción</label><textarea id="descripcion" maxlength="600" placeholder="Ej. Una botella verde con tapa negra"></textarea>
+<label for="foto">Foto opcional</label><input type="file" id="foto" accept="image/jpeg,image/png,image/webp"><small>Solo el objeto. Reserva una marca para la verificación privada.</small>
+<label for="zona">Sector o lugar aproximado</label><input id="zona" required maxlength="100" placeholder="Ej. Centro, Loja">
+<label for="fecha">Fecha aproximada</label><input type="date" id="fecha" required><button>Publicar y buscar coincidencias</button></form>
+</section><section><h2>Mis reportes</h2><select id="mis" aria-label="Mis reportes"></select><button class="minor" id="actualizar">Actualizar coincidencias</button><div id="resultado"></div></section></div><p id="state" role="status" aria-live="polite"></p></main>
+<script>
+const $=id=>document.getElementById(id);
+const localKey='hallazgos-reportes-v1';
+let saved=JSON.parse(localStorage.getItem(localKey)||'[]'), sequence=0;
+const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());$('fecha').max=$('fecha').value=now.toISOString().slice(0,10);
+function el(tag,text,parent){const node=document.createElement(tag);node.textContent=text;parent.append(node);return node}
+function action(parent,label,fn){const b=el('button',label,parent);b.type='button';b.onclick=()=>fn().catch(err=>statusText(err.message));return b}
+function statusText(s){$('state').textContent=s}
+async function api(path,obj){const res=await fetch('api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});const data=await res.json();if(!res.ok)throw Error(data.error||'No se pudo completar la acción.');return data}
+function menu(){const sel=$('mis');sel.replaceChildren();for(const r of saved){const o=el('option',r.label,sel);o.value=r.id}if(!saved.length)el('option','Todavía no hay reportes en este navegador',sel)}
+async function view(){const n=++sequence,r=saved.find(s=>s.id===$('mis').value),out=$('resultado');out.replaceChildren();if(!r)return;
+ const data=await api('ver',r);if(n!==sequence)return;
+ if(data.pie)el('p','Descripción visual automática (inglés): '+data.pie,out);
+ el('h3',data.abierto?'Posibles coincidencias':'Reporte cerrado',out);
+ if(data.abierto&&!data.candidatos.length)el('p','Aún no hay candidatos. Vuelve después de que se publique otro reporte.',out);
+ function contactar(parent,id){const txt=el('textarea','',parent);txt.placeholder='Pregunta por un detalle privado del objeto';txt.maxLength=500;txt.setAttribute('aria-label','Mensaje privado');
+ action(parent,'Enviar mensaje',async()=>{if(!txt.value.trim())return;await api('mensaje',{...r,destino:id,texto:txt.value});await view();statusText('Mensaje enviado.')})}
+ for(const c of data.candidatos){const card=el('article','',out);if(c.miniatura){const im=el('img','',card);im.src='data:image/jpeg;base64,'+c.miniatura;im.alt='Foto del objeto reportado'}
+ el('strong',c.descripcion||'Objeto fotografiado',card);el('p',c.zona+' · '+c.fecha,card);if(c.pie)el('small','Lectura automática: '+c.pie,card);
+ contactar(card,c.id)}
+ if(data.mensajes.length){el('h3','Mensajes privados',out);for(const m of data.mensajes){const card=el('article','',out);el('p',(m.origen===r.id?'Tú: ':'Recibido: ')+m.texto,card);if(data.abierto&&m.destino===r.id)contactar(card,m.origen)}}
+ if(data.abierto)action(out,'Cerrar este reporte',async()=>{if(confirm('¿Cerrar este reporte y retirarlo de las búsquedas?')){await api('cerrar',r);await view()}}).className='minor'}
+async function photo(file){if(!file)return '';const bm=await createImageBitmap(file);const scale=Math.min(1,900/Math.max(bm.width,bm.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,bm.width*scale);canvas.height=Math.max(1,bm.height*scale);canvas.getContext('2d').drawImage(bm,0,0,canvas.width,canvas.height);bm.close();return canvas.toDataURL('image/jpeg',.82).split(',')[1]}
+$('form').onsubmit=async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;statusText('Analizando el reporte…');try{const obj={};for(const k of ['tipo','descripcion','zona','fecha'])obj[k]=$(k).value;obj.foto=await photo($('foto').files[0]);const r=await api('publicar',obj);saved.unshift({...r,label:(obj.tipo==='perdido'?'Perdí':'Encontré')+' · '+(obj.descripcion||obj.zona).slice(0,46)});localStorage.setItem(localKey,JSON.stringify(saved));menu();$('foto').value='';$('descripcion').value='';await view();statusText('Reporte guardado. Puedes actualizarlo desde este navegador.')}catch(err){statusText(err.message)}finally{button.disabled=false}};
+$('actualizar').onclick=$('mis').onchange=()=>view().catch(e=>statusText(e.message));menu();view().catch(e=>statusText(e.message));
+</script></html>

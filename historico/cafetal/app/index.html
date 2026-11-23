@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cafetal · asistente de campo sin señal</title>
+  <meta name="description" content="Prueba de concepto: un modelo de lenguaje pequeño corre dentro del navegador y convierte la nota de una visita a un cafetal en un registro técnico, sin enviar datos a internet.">
+  <meta name="theme-color" content="#f4f2ed" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121210" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-in">
+      <div class="marca">
+        <svg class="marca-icono" viewBox="0 0 28 28" aria-hidden="true">
+          <rect width="28" height="28" rx="8" fill="currentColor"/>
+          <path d="M8 19.5C8 12.6 12.4 8.4 20 8c.4 7.6-3.8 12-10.7 12L8 19.5Z" fill="var(--bg)"/>
+          <path d="M8 20c2.2-4.6 5.4-7.6 9.4-9.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span>Cafetal</span>
+      </div>
+      <button class="estado" id="estado" type="button" data-fase="revisando" aria-haspopup="dialog">
+        <span class="estado-punto" aria-hidden="true"></span>
+        <span id="estado-texto">Revisando el equipo</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app" id="app">
+    <section class="view" id="v-visita" aria-labelledby="t-visita">
+      <header class="titulo">
+        <h1 id="t-visita">Nueva visita</h1>
+        <p>Describa lo que vio en el cafetal. El análisis ocurre en este equipo y la nota no sale de aquí.</p>
+      </header>
+
+      <div id="preparar"></div>
+
+      <form id="form-visita" novalidate>
+        <div class="grupo">
+          <div class="fila-doble">
+            <label class="campo">
+              <span class="campo-nombre">Productor</span>
+              <input name="productor" type="text" autocomplete="off" placeholder="Opcional" maxlength="60">
+            </label>
+            <label class="campo">
+              <span class="campo-nombre">Cantón</span>
+              <select name="canton" id="canton"></select>
+            </label>
+          </div>
+          <label class="campo">
+            <span class="campo-nombre">Nota de campo</span>
+            <textarea name="nota" id="nota" rows="5" maxlength="900" placeholder="Qué síntomas vio, en qué lote, en cuántas plantas…" aria-describedby="nota-ayuda"></textarea>
+          </label>
+        </div>
+        <p class="ayuda" id="nota-ayuda" role="status"></p>
+
+        <div class="ejemplos">
+          <span class="ejemplos-titulo">Probar con una nota de ejemplo</span>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <button class="btn primario" id="analizar" type="submit" disabled>Analizar en este equipo</button>
+      </form>
+
+      <div id="resultado" aria-live="polite"></div>
+    </section>
+
+    <section class="view" id="v-historial" aria-labelledby="t-historial" hidden>
+      <header class="titulo">
+        <h1 id="t-historial">Historial</h1>
+        <p>Las visitas quedan guardadas solo en este equipo hasta que usted las exporte.</p>
+      </header>
+      <div id="historial"></div>
+    </section>
+
+    <section class="view" id="v-guia" aria-labelledby="t-guia" hidden>
+      <header class="titulo">
+        <h1 id="t-guia">Guía local</h1>
+        <p>El modelo solo puede elegir entre estas fichas. Las recomendaciones salen de aquí, no las redacta la IA.</p>
+      </header>
+      <div id="guia"></div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Secciones">
+    <span class="tabs-indicador" aria-hidden="true"></span>
+    <button class="tab" type="button" data-ir="visita" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h10l4 4V19.5H5z"/><path d="M9 12h6M9 15.5h4"/></svg>
+      <span>Visita</span>
+    </button>
+    <button class="tab" type="button" data-ir="historial">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>
+      <span>Historial</span>
+    </button>
+    <button class="tab" type="button" data-ir="guia">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6c2.6-.9 5-.7 7.5.8 2.500-1.500 4.900-1.700 7.500-.8v12c-2.600-.9-5-.7-7.500.8-2.500-1.500-4.900-1.700-7.500-.8z"/><path d="M12 6.800v12"/></svg>
+      <span>Guía</span>
+    </button>
+  </nav>
+
+  <div class="sheet-layer" id="hoja" hidden>
+    <div class="scrim"></div>
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="hoja-titulo" tabindex="-1">
+      <div class="sheet-drag">
+        <span class="sheet-agarre" aria-hidden="true"></span>
+        <div class="sheet-cabecera">
+          <h2 class="sheet-title" id="hoja-titulo"></h2>
+          <button class="cerrar" type="button" data-close aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sheet-body"></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
