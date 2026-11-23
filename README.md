@@ -3,6 +3,13 @@ Objetos perdidos y encontrados en cualquier ciudad. Una persona registra una pé
 
 **[Abrir la demostración en Google Colab](https://colab.research.google.com/github/AlexJavierQ/problema-loja/blob/main/Demo.ipynb)**. Ejecuta las tres celdas con CPU y abre el enlace de la última. La app y sus datos viven en esa sesión. Dos entornos Colab independientes no comparten reportes.
 
+## Frontend para Vercel
+El directorio `app/` contiene un prototipo estático y adaptable a celular. La pestaña Explorar incluye cuatro objetos de muestra con fotografías de DummyJSON. Puedes crear ambos tipos de reporte, adjuntar una foto, consultar candidatos, ensayar conversaciones desde Mis reportes y cerrar un caso. Los datos se conservan en el navegador de la demo.
+
+La comparación rápida usa palabras y sinónimos. El botón «Comparar con IA» descarga los modelos de descripción de imágenes y similitud multilingüe con Transformers.js y ejecuta la inferencia en el navegador. Requiere conexión en la primera carga. Para compartir una base entre varios dispositivos utiliza el servidor Python.
+
+Para desplegar, importa este repositorio en Vercel desde la raíz. El archivo `vercel.json` selecciona `app/` como salida estática.
+
 ## Ejecutar con Python
 Usa Python 3.11 o 3.12 de 64 bits. En un entorno virtual instala las dependencias y arranca el servidor:
 
